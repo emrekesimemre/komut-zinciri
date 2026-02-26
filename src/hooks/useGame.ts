@@ -1,5 +1,5 @@
 // src/hooks/useGame.ts
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { GameState, Command, Direction, Position } from '../types/game';
 import { LEVELS } from '../constants/levels';
 
@@ -9,6 +9,9 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export const useGame = () => {
   const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
   const currentLevel = LEVELS[currentLevelIndex];
+  const [duration, setDuration] = useState(0);
+  const timerIntervalRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   const [gameState, setGameState] = useState<GameState>({
     currentLevelId: currentLevel.id,
@@ -21,9 +24,35 @@ export const useGame = () => {
     collectedItems: [],
   });
 
+  // Timer effect
+  useEffect(() => {
+    if (gameState.isPlaying && startTimeRef.current) {
+      timerIntervalRef.current = window.setInterval(() => {
+        setDuration(Math.floor((Date.now() - startTimeRef.current!) / 1000));
+      }, 100);
+    } else {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, [gameState.isPlaying]);
+
   const addCommand = (cmd: Command) => {
     if (!gameState.isPlaying && gameState.commands.length < currentLevel.maxMoves) {
       setGameState((prev) => ({ ...prev, commands: [...prev.commands, cmd] }));
+    }
+  };
+
+  const undoCommand = () => {
+    if (!gameState.isPlaying && gameState.commands.length > 0) {
+      setGameState((prev) => ({ ...prev, commands: prev.commands.slice(0, -1) }));
     }
   };
 
@@ -32,6 +61,12 @@ export const useGame = () => {
   };
 
   const resetGame = () => {
+    setDuration(0);
+    startTimeRef.current = null;
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
     setGameState({
       currentLevelId: currentLevel.id,
       playerPos: currentLevel.playerPos,
@@ -49,6 +84,12 @@ export const useGame = () => {
       const newIndex = currentLevelIndex + 1;
       const newLevel = LEVELS[newIndex];
       setCurrentLevelIndex(newIndex);
+      setDuration(0);
+      startTimeRef.current = null;
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
       // Yeni seviyenin başlangıç değerleriyle state'i sıfırla
       setGameState({
         currentLevelId: newLevel.id,
@@ -70,6 +111,9 @@ export const useGame = () => {
   const runCommands = async () => {
     if (gameState.commands.length === 0 || gameState.isPlaying) return;
 
+    // Start timer
+    startTimeRef.current = Date.now();
+    setDuration(0);
     setGameState((prev) => ({ ...prev, isPlaying: true, status: 'idle' }));
 
     let currentPos = { ...gameState.playerPos };
@@ -118,17 +162,17 @@ export const useGame = () => {
 
       setGameState(prev => ({ ...prev, playerPos: currentPos, playerDir: currentDir }));
       await sleep(600);
+    }
 
-      // Hedefe ulaştı mı?
-      if (currentPos.x === currentLevel.targetPos.x && currentPos.y === currentLevel.targetPos.y) {
-        // Tüm pilleri topladı mı?
-        if (collectedItems.length === currentLevel.collectibles.length) {
-          setGameState(prev => ({ ...prev, status: 'won', isPlaying: false }));
-        } else {
-          setGameState(prev => ({ ...prev, status: 'missing_collectibles', isPlaying: false }));
-        }
-        return;
+    // Tüm komutlar çalıştı, şimdi hedefe ulaşıp ulaşılmadığını kontrol et
+    if (currentPos.x === currentLevel.targetPos.x && currentPos.y === currentLevel.targetPos.y) {
+      // Tüm pilleri topladı mı?
+      if (collectedItems.length === currentLevel.collectibles.length) {
+        setGameState(prev => ({ ...prev, status: 'won', isPlaying: false, activeIndex: -1 }));
+      } else {
+        setGameState(prev => ({ ...prev, status: 'missing_collectibles', isPlaying: false, activeIndex: -1 }));
       }
+      return;
     }
 
     // Komutlar bitti ama yıldıza veya hedeflere ulaşılamadı
@@ -138,7 +182,9 @@ export const useGame = () => {
   return {
     ...gameState,
     currentLevel,
+    duration,
     addCommand,
+    undoCommand,
     clearCommands,
     resetGame,
     runCommands,

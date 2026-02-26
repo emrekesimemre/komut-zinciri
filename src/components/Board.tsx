@@ -32,11 +32,12 @@ export const Board: React.FC<BoardProps> = ({ playerPos, playerDir, currentLevel
       display: 'grid',
       gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
       gridTemplateRows: `repeat(${gridSize}, 1fr)`, 
-      gap: '4px',
+      gap: '3px',
       width: '100%',
       backgroundColor: '#e0e0e0',
-      padding: '8px',
-      borderRadius: '12px'
+      padding: '6px',
+      borderRadius: '10px',
+      boxSizing: 'border-box'
     }}>
       {Array.from({ length: gridSize * gridSize }).map((_, index) => {
         const x = index % gridSize;
@@ -70,7 +71,7 @@ export const Board: React.FC<BoardProps> = ({ playerPos, playerDir, currentLevel
           content = '🔋';
           bgColor = '#e6ffed'; 
         } else if (isTargetHere) {
-          content = '🌟';
+          content = '🥚';
           bgColor = '#ffd700'; 
         }
 
@@ -81,7 +82,7 @@ export const Board: React.FC<BoardProps> = ({ playerPos, playerDir, currentLevel
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '2rem',
+            fontSize: '1.6rem',
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
             aspectRatio: '1/1',
             width: '100%',

@@ -11,16 +11,18 @@ interface ControlsProps {
 export const Controls: React.FC<ControlsProps> = ({ onAddCommand, disabled, playerDir }) => {
   const btnStyle = {
     flex: 1,
-    padding: '15px',
-    fontSize: '1.1rem',
+    padding: '10px 6px',
+    fontSize: '0.95rem',
     fontWeight: 'bold',
-    borderRadius: '12px',
+    borderRadius: '10px',
     border: 'none',
     backgroundColor: '#e6f7ff',
     color: '#0050b3',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.6 : 1,
+    transition: 'all 0.2s ease',
+    minWidth: '70px'
   };
 
   // Karakterin yönüne göre doğru oku göster
@@ -34,7 +36,7 @@ export const Controls: React.FC<ControlsProps> = ({ onAddCommand, disabled, play
   };
 
   return (
-    <div style={{ display: 'flex', gap: '10px', width: '100%', marginBottom: '20px' }}>
+    <div style={{ display: 'flex', gap: '6px', width: '100%', marginBottom: '8px' }}>
       <button disabled={disabled} onClick={() => onAddCommand('LEFT')} style={btnStyle}>↪️ Sol</button>
       <button disabled={disabled} onClick={() => onAddCommand('FORWARD')} style={{...btnStyle, flex: 1.5}}>{getForwardArrow()} İleri</button>
       <button disabled={disabled} onClick={() => onAddCommand('RIGHT')} style={btnStyle}>Sağ ↩️</button>
