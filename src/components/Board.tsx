@@ -73,6 +73,7 @@ export const Board: React.FC<BoardProps> = ({ playerPos, playerDir, currentLevel
         } else if (isTargetHere) {
           content = '🥚';
           bgColor = '#ffd700'; 
+          
         }
 
         return (
