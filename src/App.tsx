@@ -1,5 +1,5 @@
 // src/App.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGame } from './hooks/useGame';
 import { Board } from './components/Board';
 import { Controls } from './components/Controls';
@@ -11,9 +11,10 @@ import { useAuth } from './contexts/AuthContext';
 import { API_URL } from './constants/config';
 
 export default function App() {
-  const { user, logout, token } = useAuth();
+  const { user, logout, token, updateUser } = useAuth();
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const lastSubmittedLevelRef = useRef<number | null>(null);
   
   const {
     currentLevel,
@@ -43,7 +44,7 @@ export default function App() {
     const totalScore = baseScore + timeBonus + moveBonus;
 
     try {
-      await fetch(`${API_URL}/scores`, {
+      const response = await fetch(`${API_URL}/scores`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -59,18 +60,27 @@ export default function App() {
           movesUsed: commands.length
         })
       });
+      
+      if (response.ok) {
+        // Update user score instantly in UI
+        updateUser({ 
+          totalScore: user.totalScore + totalScore,
+          levelsCompleted: Math.max(user.levelsCompleted || 0, currentLevel.id)
+        });
+        lastSubmittedLevelRef.current = currentLevel.id;
+      }
     } catch (error) {
       console.error('Skor gönderilemedi:', error);
     }
   };
 
-  // Submit score when level is won
+  // Submit score when level is won (only once per level)
   useEffect(() => {
-    if (status === 'won' && user && token) {
+    if (status === 'won' && user && token && lastSubmittedLevelRef.current !== currentLevel.id) {
       submitScore();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, user, token]);
+  }, [status, user, token, currentLevel.id]);
 
   if (!user) {
     return authView === 'login' ? (
@@ -82,13 +92,13 @@ export default function App() {
 
   const actionBtnStyle = {
     flex: 1,
-    padding: '10px 8px',
-    fontSize: '0.95rem',
+    padding: '8px 6px',
+    fontSize: '0.9rem',
     fontWeight: 'bold',
-    borderRadius: '10px',
+    borderRadius: '8px',
     border: 'none',
     color: 'white',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
   };
@@ -104,28 +114,30 @@ export default function App() {
         display: 'flex', 
         flexDirection: 'column', 
         alignItems: 'center', 
-        padding: '6px', 
+        padding: '4px', 
         fontFamily: 'system-ui, -apple-system, sans-serif', 
         width: '100%',
         maxWidth: '100vw',
+        height: '100vh',
         margin: '0',
         boxSizing: 'border-box',
-        paddingBottom: '8px',
+        paddingBottom: '4px',
         overflowX: 'hidden',
-        minHeight: '100vh'
+        overflowY: 'auto'
       }}>
       
       {/* HEADER: User info & Timer */}
       <div style={{ 
         width: '100%', 
+        maxWidth: '600px',
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '8px',
-        padding: '8px',
+        marginBottom: '4px',
+        padding: '6px',
         backgroundColor: '#fafafa',
-        borderRadius: '10px',
-        gap: '8px'
+        borderRadius: '8px',
+        gap: '6px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#262626' }}>
@@ -170,28 +182,34 @@ export default function App() {
       </div>
       
       {/* ÜST BİLGİ PANELİ: Bölüm, Hamle ve Timer */}
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', marginTop: '2px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Bölüm: {currentLevel.id}</h2>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#1890ff' }}>
+      <div style={{ width: '100%', maxWidth: '600px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', marginTop: '0' }}>
+        <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Bölüm: {currentLevel.id}</h2>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#1890ff' }}>
             ⏱️ {duration}s
           </div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: isMaxMovesReached ? '#ff4d4f' : '#262626' }}>
+          <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: isMaxMovesReached ? '#ff4d4f' : '#fff' }}>
             Hamle: {commands.length} / {currentLevel.maxMoves}
           </div>
         </div>
       </div>
       
       {/* OYUN ALANI */}
-      <Board 
-        playerPos={playerPos} 
-        playerDir={playerDir} 
-        currentLevel={currentLevel}
-        collectedItems={collectedItems} // Yeni eklenen prop
-      />
+      <div style={{ 
+        width: '100%', 
+        maxWidth: '600px', 
+        margin: '0 auto'
+      }}>
+        <Board 
+          playerPos={playerPos} 
+          playerDir={playerDir} 
+          currentLevel={currentLevel}
+          collectedItems={collectedItems} // Yeni eklenen prop
+        />
+      </div>
 
       {/* DETAYLI DURUM BİLDİRİMLERİ */}
-      <div style={{ margin: '8px 0', fontSize: '0.9rem', fontWeight: 'bold', minHeight: '22px', textAlign: 'center' }}>
+      <div style={{ width: '100%', maxWidth: '600px', margin: '4px auto', fontSize: '0.85rem', fontWeight: 'bold', minHeight: '20px', textAlign: 'center' }}>
         {status === 'won' && <span style={{ color: '#52c41a' }}>Harika! Bölümü geçtin! 🎉</span>}
         {status === 'crashed' && <span style={{ color: '#ff4d4f' }}>Eyvah! Kayalara veya duvara çarptık. 💥</span>}
         {status === 'out_of_moves' && <span style={{ color: '#fa8c16' }}>Hedefe ulaşamadan hamlemiz bitti! 🔄</span>}
@@ -206,14 +224,26 @@ export default function App() {
       </div>
 
       {/* YÖN KONTROLLERİ */}
-      <Controls onAddCommand={addCommand} disabled={isPlaying || isMaxMovesReached} playerDir={playerDir} />
+      <div style={{ 
+        width: '100%', 
+        maxWidth: '600px', 
+        margin: '0 auto'
+      }}>
+        <Controls onAddCommand={addCommand} disabled={isPlaying || isMaxMovesReached} playerDir={playerDir} />
+      </div>
       
-      <CommandQueue commands={commands} activeIndex={activeIndex} initialDir={currentLevel.playerDir} />
+      <div style={{ 
+        width: '100%', 
+        maxWidth: '600px', 
+        margin: '0 auto'
+      }}>
+        <CommandQueue commands={commands} activeIndex={activeIndex} initialDir={currentLevel.playerDir} />
+      </div>
 
       {/* ALT BUTONLAR */}
-      <div style={{ width: '100%', marginTop: '8px' }}>
+      <div style={{ width: '100%', maxWidth: '600px', margin: '4px auto 0' }}>
         {/* Üst sıra: Geri Al ve Temizle */}
-        <div style={{ display: 'flex', gap: '6px', width: '100%', marginBottom: '6px' }}>
+        <div style={{ display: 'flex', gap: '4px', width: '100%', marginBottom: '4px' }}>
           <button 
             onClick={undoCommand} 
             disabled={isPlaying || commands.length === 0 || status !== 'idle'} 

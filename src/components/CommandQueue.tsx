@@ -65,8 +65,8 @@ export const CommandQueue: React.FC<CommandQueueProps> = ({ commands, activeInde
     <div style={{ 
       width: '100%', 
       backgroundColor: '#f5f5f5', 
-      padding: '8px', 
-      borderRadius: '10px', 
+      padding: '4px', 
+      borderRadius: '8px', 
       boxSizing: 'border-box',
     }}>
       
@@ -75,7 +75,7 @@ export const CommandQueue: React.FC<CommandQueueProps> = ({ commands, activeInde
       <div style={{ 
           display: 'flex',
           flexWrap: 'wrap',
-          gap: '6px',
+          gap: '4px',
           padding: '2px',
         }}
       >
@@ -84,21 +84,21 @@ export const CommandQueue: React.FC<CommandQueueProps> = ({ commands, activeInde
           
           return (
             <div key={groupIndex} style={{
-              minWidth: '36px',
-              height: '36px',
+              minWidth: '32px',
+              height: '32px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: isActive ? '#ffd700' : 'white',
               border: `2px solid ${isActive ? '#d4b106' : '#d9d9d9'}`,
-              borderRadius: '8px',
-              fontSize: '1rem',
-              boxShadow: isActive ? '0 4px 8px rgba(212, 177, 6, 0.3)' : '0 2px 4px rgba(0,0,0,0.08)',
+              borderRadius: '6px',
+              fontSize: '0.95rem',
+              boxShadow: isActive ? '0 2px 4px rgba(212, 177, 6, 0.3)' : '0 1px 2px rgba(0,0,0,0.08)',
               transition: 'all 0.2s ease',
               transform: isActive ? 'scale(1.1)' : 'scale(1)',
               position: 'relative',
               fontWeight: isActive ? 'bold' : 'normal',
-              padding: '4px 6px'
+              padding: '2px 4px'
             }}>
               <span>{getCommandIcon(group.cmd, group.startIndex)}</span>
               {group.count > 1 && (
@@ -118,10 +118,10 @@ export const CommandQueue: React.FC<CommandQueueProps> = ({ commands, activeInde
 
       {commands.length === 0 && (
         <div style={{ 
-          padding: '12px', 
+          padding: '8px', 
           textAlign: 'center',
           color: '#888', 
-          fontSize: '0.9rem', 
+          fontSize: '0.85rem', 
           fontStyle: 'italic' 
         }}>
           Dino bekliyor...

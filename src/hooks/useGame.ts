@@ -7,11 +7,26 @@ const DIRS: Direction[] = ['NORTH', 'EAST', 'SOUTH', 'WEST'];
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const useGame = () => {
-  const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
+  // Load level progress from localStorage
+  const [currentLevelIndex, setCurrentLevelIndex] = useState(() => {
+    const saved = localStorage.getItem('currentLevelIndex');
+    return saved ? parseInt(saved, 10) : 0;
+  });
   const currentLevel = LEVELS[currentLevelIndex];
   const [duration, setDuration] = useState(0);
   const timerIntervalRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
+
+  // Save level progress to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('currentLevelIndex', currentLevelIndex.toString());
+  }, [currentLevelIndex]);
+
+  // Start timer when level loads
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+    setDuration(0);
+  }, [currentLevelIndex]);
 
   const [gameState, setGameState] = useState<GameState>({
     currentLevelId: currentLevel.id,
@@ -24,13 +39,15 @@ export const useGame = () => {
     collectedItems: [],
   });
 
-  // Timer effect
+  // Timer effect - always running
   useEffect(() => {
-    if (gameState.isPlaying && startTimeRef.current) {
+    if (startTimeRef.current && gameState.status !== 'won') {
       timerIntervalRef.current = window.setInterval(() => {
-        setDuration(Math.floor((Date.now() - startTimeRef.current!) / 1000));
+        if (startTimeRef.current) {
+          setDuration(Math.floor((Date.now() - startTimeRef.current) / 1000));
+        }
       }, 100);
-    } else {
+    } else if (gameState.status === 'won') {
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
         timerIntervalRef.current = null;
@@ -42,7 +59,7 @@ export const useGame = () => {
         clearInterval(timerIntervalRef.current);
       }
     };
-  }, [gameState.isPlaying]);
+  }, [gameState.status, currentLevelIndex]);
 
   const addCommand = (cmd: Command) => {
     if (!gameState.isPlaying && gameState.commands.length < currentLevel.maxMoves) {
@@ -62,7 +79,7 @@ export const useGame = () => {
 
   const resetGame = () => {
     setDuration(0);
-    startTimeRef.current = null;
+    startTimeRef.current = Date.now(); // Restart timer
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
@@ -84,12 +101,6 @@ export const useGame = () => {
       const newIndex = currentLevelIndex + 1;
       const newLevel = LEVELS[newIndex];
       setCurrentLevelIndex(newIndex);
-      setDuration(0);
-      startTimeRef.current = null;
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-        timerIntervalRef.current = null;
-      }
       // Yeni seviyenin başlangıç değerleriyle state'i sıfırla
       setGameState({
         currentLevelId: newLevel.id,
@@ -111,9 +122,6 @@ export const useGame = () => {
   const runCommands = async () => {
     if (gameState.commands.length === 0 || gameState.isPlaying) return;
 
-    // Start timer
-    startTimeRef.current = Date.now();
-    setDuration(0);
     setGameState((prev) => ({ ...prev, isPlaying: true, status: 'idle' }));
 
     let currentPos = { ...gameState.playerPos };

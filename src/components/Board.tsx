@@ -32,11 +32,11 @@ export const Board: React.FC<BoardProps> = ({ playerPos, playerDir, currentLevel
       display: 'grid',
       gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
       gridTemplateRows: `repeat(${gridSize}, 1fr)`, 
-      gap: '3px',
+      gap: '2px',
       width: '100%',
       backgroundColor: '#e0e0e0',
-      padding: '6px',
-      borderRadius: '10px',
+      padding: '4px',
+      borderRadius: '8px',
       boxSizing: 'border-box'
     }}>
       {Array.from({ length: gridSize * gridSize }).map((_, index) => {
@@ -73,18 +73,18 @@ export const Board: React.FC<BoardProps> = ({ playerPos, playerDir, currentLevel
         } else if (isTargetHere) {
           content = '🥚';
           bgColor = '#ffd700'; 
-          
+
         }
 
         return (
           <div key={cellKey} style={{
             backgroundColor: bgColor,
-            borderRadius: '8px',
+            borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '1.6rem',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            fontSize: '1.4rem',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
             aspectRatio: '1/1',
             width: '100%',
             overflow: 'hidden'
