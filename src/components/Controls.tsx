@@ -25,7 +25,7 @@ export const Controls: React.FC<ControlsProps> = ({ onAddCommand, disabled, play
     minWidth: '60px'
   };
 
-  // Karakterin yönüne göre doğru oku göster
+  // Dinonun yönüne göre doğru oku göster
   const getForwardArrow = () => {
     switch (playerDir) {
       case 'NORTH': return '⬆️';

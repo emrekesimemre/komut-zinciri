@@ -68,10 +68,10 @@ export const Board: React.FC<BoardProps> = ({ playerPos, playerDir, currentLevel
           content = '🪨';
           bgColor = '#a8a8a8'; 
         } else if (isCollectibleHere) { 
-          content = '🔋';
+          content = '🥚';
           bgColor = '#e6ffed'; 
         } else if (isTargetHere) {
-          content = '🥚';
+          content = '🏠';
           bgColor = '#ffd700'; 
 
         }

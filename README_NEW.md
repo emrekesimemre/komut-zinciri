@@ -9,7 +9,7 @@ Eğlenceli bir programlama mantığı oyunu! Dinozoru komutlarla hedefe ulaştı
 - 🏆 Puan sistemi ve lider tablosu  
 - ⏱️ Zamanlayıcı
 - 📊 Puanlama: Temel Puan (1000) + Zaman Bonusu + Hamle Bonusu
-- 🎯 Toplanabilir objeler (Piller)
+- 🎯 Toplanabilir objeler (Yumurtalar)
 - 📱 Mobil uyumlu tasarım
 
 ## Kurulum
@@ -56,8 +56,8 @@ Frontend varsayılan olarak `http://localhost:5173` üzerinde çalışacaktır.
 
 1. Kayıt ol veya giriş yap
 2. Kontrollerle (Sol, İleri, Sağ) komutlarını planla
-3. Tüm pilleri topla
-4. Yıldıza ulaş
+3. Tüm yumurtaları topla
+4. Yuvaya ulaş (🏠)
 5. Puanını kazan ve lider tablosuna gir!
 
 ## Geliştirici

@@ -15,7 +15,7 @@ export interface Level {
   playerDir: Direction;
   targetPos: Position;
   obstacles: Position[];
-  collectibles: Position[]; // Enerji pilleri
+  collectibles: Position[]; // Yumurtalar
   maxMoves: number; // Sınırlı hamle
 }
 

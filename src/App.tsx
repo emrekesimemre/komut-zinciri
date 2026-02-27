@@ -7,13 +7,18 @@ import { CommandQueue } from './components/CommandQueue';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
 import { Leaderboard } from './components/Leaderboard';
+import { Menu } from './components/Menu';
+import { LevelSelect } from './components/LevelSelect';
 import { useAuth } from './contexts/AuthContext';
 import { API_URL } from './constants/config';
+
+type Page = 'menu' | 'levelSelect' | 'game' | 'leaderboard';
 
 export default function App() {
   const { user, logout, token, updateUser } = useAuth();
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [currentPage, setCurrentPage] = useState<Page>('menu');
+  const [selectedLevelIndex, setSelectedLevelIndex] = useState<number>(0);
   const lastSubmittedLevelRef = useRef<number | null>(null);
   
   const {
@@ -31,8 +36,10 @@ export default function App() {
     clearCommands,
     resetGame,
     runCommands,
-    nextLevel
-  } = useGame();
+    nextLevel,
+    startTimer,
+    changeLevel
+  } = useGame(selectedLevelIndex);
 
   const submitScore = async () => {
     if (!user || !token) return;
@@ -82,6 +89,22 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, user, token, currentLevel.id]);
 
+  const handleSelectLevel = (levelIndex: number) => {
+    setSelectedLevelIndex(levelIndex);
+    changeLevel(levelIndex);
+    setCurrentPage('game');
+    // Start timer when level is opened
+    setTimeout(() => startTimer(), 100);
+  };
+
+  const handleBackToMenu = () => {
+    setCurrentPage('menu');
+  };
+
+  const handleBackToLevelSelect = () => {
+    setCurrentPage('levelSelect');
+  };
+
   if (!user) {
     return authView === 'login' ? (
       <Login onNavigateToRegister={() => setAuthView('register')} />
@@ -90,6 +113,35 @@ export default function App() {
     );
   }
 
+  // Show different pages based on currentPage state
+  if (currentPage === 'menu') {
+    return (
+      <Menu 
+        onPlayGame={() => setCurrentPage('levelSelect')}
+        onViewLeaderboard={() => setCurrentPage('leaderboard')}
+      />
+    );
+  }
+
+  if (currentPage === 'levelSelect') {
+    return (
+      <LevelSelect 
+        onSelectLevel={handleSelectLevel}
+        onBack={handleBackToMenu}
+      />
+    );
+  }
+
+  if (currentPage === 'leaderboard') {
+    return (
+      <Leaderboard 
+        onClose={handleBackToMenu}
+        standalone={true}
+      />
+    );
+  }
+
+  // Game Page
   const actionBtnStyle = {
     flex: 1,
     padding: '8px 6px',
@@ -108,8 +160,6 @@ export default function App() {
 
   return (
     <div>
-      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
-      
       <div style={{ 
         display: 'flex', 
         flexDirection: 'column', 
@@ -140,34 +190,11 @@ export default function App() {
         gap: '6px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#262626' }}>
-            👤 {user.username}
-          </div>
-          <div style={{ fontSize: '0.85rem', color: '#8c8c8c' }}>
-            🏆 {user.totalScore}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <button 
-            onClick={() => setShowLeaderboard(true)}
+          <button
+            onClick={handleBackToLevelSelect}
             style={{
               padding: '6px 12px',
-              backgroundColor: '#ffd700',
-              color: '#262626',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
-          >
-            🏆 Tablo
-          </button>
-          <button 
-            onClick={logout}
-            style={{
-              padding: '6px 12px',
-              backgroundColor: '#ff4d4f',
+              backgroundColor: '#1890ff',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
@@ -176,9 +203,30 @@ export default function App() {
               cursor: 'pointer'
             }}
           >
-            Çıkış
+            ← Bölümler
           </button>
+          <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#262626' }}>
+            🦖 {user.username}
+          </div>
+          <div style={{ fontSize: '0.85rem', color: '#8c8c8c' }}>
+            🏆 {user.totalScore}
+          </div>
         </div>
+        <button 
+          onClick={logout}
+          style={{
+            padding: '6px 12px',
+            backgroundColor: '#ff4d4f',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}
+        >
+          Çıkış
+        </button>
       </div>
       
       {/* ÜST BİLGİ PANELİ: Bölüm, Hamle ve Timer */}
@@ -213,12 +261,12 @@ export default function App() {
         {status === 'won' && <span style={{ color: '#52c41a' }}>Harika! Bölümü geçtin! 🎉</span>}
         {status === 'crashed' && <span style={{ color: '#ff4d4f' }}>Eyvah! Kayalara veya duvara çarptık. 💥</span>}
         {status === 'out_of_moves' && <span style={{ color: '#fa8c16' }}>Hedefe ulaşamadan hamlemiz bitti! 🔄</span>}
-        {status === 'missing_collectibles' && <span style={{ color: '#fa8c16' }}>Yıldıza geldin ama pilleri unuttun! 🔋</span>}
+        {status === 'missing_collectibles' && <span style={{ color: '#fa8c16' }}>Yuvaya geldin ama yumurtaları unuttun! 🥚</span>}
         
-        {/* Oyun oynanmıyorken toplanması gereken pilleri hatırlat */}
+        {/* Oyun oynanmıyorken toplanması gereken yumurtaları hatırlat */}
         {status === 'idle' && currentLevel.collectibles.length > 0 && (
           <span style={{ color: '#1890ff' }}>
-            Hedef: Tüm pilleri topla ({collectedItems.length} / {currentLevel.collectibles.length})
+            Hedef: Tüm yumurtaları topla ({collectedItems.length} / {currentLevel.collectibles.length})
           </span>
         )}
       </div>

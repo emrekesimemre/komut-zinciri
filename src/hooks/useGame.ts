@@ -6,27 +6,21 @@ import { LEVELS } from '../constants/levels';
 const DIRS: Direction[] = ['NORTH', 'EAST', 'SOUTH', 'WEST'];
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const useGame = () => {
-  // Load level progress from localStorage
-  const [currentLevelIndex, setCurrentLevelIndex] = useState(() => {
-    const saved = localStorage.getItem('currentLevelIndex');
-    return saved ? parseInt(saved, 10) : 0;
-  });
+export const useGame = (initialLevelIndex: number = 0) => {
+  const [currentLevelIndex, setCurrentLevelIndex] = useState(initialLevelIndex);
   const currentLevel = LEVELS[currentLevelIndex];
   const [duration, setDuration] = useState(0);
   const timerIntervalRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  const [timerStarted, setTimerStarted] = useState(false);
 
-  // Save level progress to localStorage whenever it changes
+  // Start timer when level loads and timer is started
   useEffect(() => {
-    localStorage.setItem('currentLevelIndex', currentLevelIndex.toString());
-  }, [currentLevelIndex]);
-
-  // Start timer when level loads
-  useEffect(() => {
-    startTimeRef.current = Date.now();
-    setDuration(0);
-  }, [currentLevelIndex]);
+    if (timerStarted) {
+      startTimeRef.current = Date.now();
+      setDuration(0);
+    }
+  }, [currentLevelIndex, timerStarted]);
 
   const [gameState, setGameState] = useState<GameState>({
     currentLevelId: currentLevel.id,
@@ -39,15 +33,15 @@ export const useGame = () => {
     collectedItems: [],
   });
 
-  // Timer effect - always running
+  // Timer effect - only run when timer is started
   useEffect(() => {
-    if (startTimeRef.current && gameState.status !== 'won') {
+    if (timerStarted && startTimeRef.current && gameState.status !== 'won') {
       timerIntervalRef.current = window.setInterval(() => {
         if (startTimeRef.current) {
           setDuration(Math.floor((Date.now() - startTimeRef.current) / 1000));
         }
       }, 100);
-    } else if (gameState.status === 'won') {
+    } else if (gameState.status === 'won' || !timerStarted) {
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
         timerIntervalRef.current = null;
@@ -59,7 +53,13 @@ export const useGame = () => {
         clearInterval(timerIntervalRef.current);
       }
     };
-  }, [gameState.status, currentLevelIndex]);
+  }, [gameState.status, currentLevelIndex, timerStarted]);
+
+  const startTimer = () => {
+    setTimerStarted(true);
+    startTimeRef.current = Date.now();
+    setDuration(0);
+  };
 
   const addCommand = (cmd: Command) => {
     if (!gameState.isPlaying && gameState.commands.length < currentLevel.maxMoves) {
@@ -79,7 +79,9 @@ export const useGame = () => {
 
   const resetGame = () => {
     setDuration(0);
-    startTimeRef.current = Date.now(); // Restart timer
+    if (timerStarted) {
+      startTimeRef.current = Date.now(); // Restart timer if it was started
+    }
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
@@ -101,6 +103,7 @@ export const useGame = () => {
       const newIndex = currentLevelIndex + 1;
       const newLevel = LEVELS[newIndex];
       setCurrentLevelIndex(newIndex);
+      setTimerStarted(true); // Continue timer for next level
       // Yeni seviyenin başlangıç değerleriyle state'i sıfırla
       setGameState({
         currentLevelId: newLevel.id,
@@ -113,6 +116,28 @@ export const useGame = () => {
         collectedItems: [],
       });
     }
+  };
+
+  const changeLevel = (levelIndex: number) => {
+    const newLevel = LEVELS[levelIndex];
+    setCurrentLevelIndex(levelIndex);
+    setTimerStarted(false); // Reset timer started state
+    setDuration(0);
+    startTimeRef.current = null;
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    setGameState({
+      currentLevelId: newLevel.id,
+      playerPos: newLevel.playerPos,
+      playerDir: newLevel.playerDir,
+      commands: [],
+      isPlaying: false,
+      status: 'idle',
+      activeIndex: -1,
+      collectedItems: [],
+    });
   };
 
   // Pozisyon çakışma kontrolü
@@ -159,7 +184,7 @@ export const useGame = () => {
 
         currentPos = { x: newX, y: newY };
 
-        // 3. Toplanabilir Obje (Pil) Kontrolü
+        // 3. Toplanabilir Obje (Yumurta) Kontrolü
         const onCollectible = currentLevel.collectibles.find(c => c.x === currentPos.x && c.y === currentPos.y);
         if (onCollectible && !checkCollision(onCollectible, collectedItems)) {
           collectedItems.push(onCollectible);
@@ -174,7 +199,7 @@ export const useGame = () => {
 
     // Tüm komutlar çalıştı, şimdi hedefe ulaşıp ulaşılmadığını kontrol et
     if (currentPos.x === currentLevel.targetPos.x && currentPos.y === currentLevel.targetPos.y) {
-      // Tüm pilleri topladı mı?
+      // Tüm yumurtaları topladı mı?
       if (collectedItems.length === currentLevel.collectibles.length) {
         setGameState(prev => ({ ...prev, status: 'won', isPlaying: false, activeIndex: -1 }));
       } else {
@@ -196,6 +221,8 @@ export const useGame = () => {
     clearCommands,
     resetGame,
     runCommands,
-    nextLevel
+    nextLevel,
+    startTimer,
+    changeLevel
   };
 };
